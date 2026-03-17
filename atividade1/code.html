@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Nó Distribuído</title>
+</head>
+<body>
+	<h2>Sistema Distribuído - Nó</h2>
+	ID do nó:
+	<input id="nodeid">
+	<br><br>
+	Mensagem:
+	<input id="msg">
+	<button onclick="send()">Enviar</button>
+	<h3>Mensagens recebidas</h3>
+	<div id="log"></div>
+</html>
+
+<script>
+	// Id unico para identificar esta aba
+	var input = document.getElementById("nodeid")
+	if (!input.value) input.value = "no-" + Math.random().toString(36).slice(2, 7)
+	var myId = input.value
+
+	// Exibe uma linha de texto no elemento log da pagina
+	function log(text) {
+		document.getElementById("log").innerHTML += text + "<br>"
+	}
+
+	// Envia a mensagem da caixa de texto para as outras abas via localStorage
+	function send() {
+		let msg = document.getElementById("msg").value
+		if (!msg) return
+		// Salva a mensagem no localStorage: as outras abas recebem um evento storage
+		localStorage.setItem("message", JSON.stringify({from: myId, text: msg}))
+		// Mostra no log que você enviou
+		log("Enviado: " + msg)
+	}
+
+	// Quando localStorage muda, outras abas recebem este evento
+	window.addEventListener("storage", function (event) {
+		// Se chegou uma mensagem de outra aba
+		if (event.key === "message") {
+			var data = JSON.parse(event.newValue)
+			// Ignora a propria mensagem
+			if (data.from !== myId) {
+				log("Recebido de " + data.from + ": " + data.text)
+				// Automáticamente envia uma confirmacao de que recebeu
+				localStorage.setItem("ack", JSON.stringify({from: myId, to: data.from}))
+			}
+		}
+		// Se chegou uma confirmacao de recebimento
+		if (event.key === "ack") {
+			var ack = JSON.parse(event.newValue)
+			// Apenas mostra no log se a confirmacao foi pra esta aba
+			if (ack.to === myId) log("Confirmacao de " + ack.from)
+		}
+	})
+</script>
+</body>
